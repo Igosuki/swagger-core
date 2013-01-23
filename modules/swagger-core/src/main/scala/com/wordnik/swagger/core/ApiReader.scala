@@ -92,9 +92,9 @@ trait ApiSpecParserTrait extends BaseApiParser {
 
   private val ListRegex: scala.util.matching.Regex = """List\[(.*?)\]""".r
   def parseMethod(method: Method): Any = {
-    val apiOperation = method.getAnnotation(classOf[ApiOperation])
-    val apiErrors = method.getAnnotation(classOf[ApiErrors])
-    val isDeprecated = method.getAnnotation(classOf[Deprecated])
+    val apiOperation = AnnotationUtil.findAnnotation(method, classOf[ApiOperation])
+    val apiErrors = AnnotationUtil.findAnnotation(method, classOf[ApiErrors])
+    val isDeprecated = AnnotationUtil.findAnnotation(method, classOf[Deprecated])
 
     LOGGER.debug("parsing method " + method.getName)
     if (apiOperation != null && method.getName != "getHelp") {
