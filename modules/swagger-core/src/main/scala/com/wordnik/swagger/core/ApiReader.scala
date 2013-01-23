@@ -39,6 +39,11 @@ object ApiMethodType {
   val HEAD = "HEAD"
 }
 
+trait GenericParserTrait {
+  def parseMethod(method: Method, endPoint: DocumentationEndPoint )
+
+}
+
 trait ApiSpecParserTrait extends BaseApiParser {
   private val LOGGER = LoggerFactory.getLogger(classOf[ApiSpecParserTrait])
 
@@ -51,6 +56,7 @@ trait ApiSpecParserTrait extends BaseApiParser {
   def resourcePath: String
   def getPath(method: Method): String
   def processParamAnnotations(docParam: DocumentationParameter, paramAnnotations: Array[Annotation], method: Method): Boolean
+  def additionalParsers: List[GenericParserTrait]
 
   val TRAIT = "trait"
 

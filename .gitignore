@@ -4,6 +4,7 @@ target
 samples/scala-play2/logs
 .idea
 .idea_modules
+*.iml
 .settings
 .project
 .classpath
