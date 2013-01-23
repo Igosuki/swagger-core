@@ -14,6 +14,8 @@ import javax.servlet.ServletConfig
 
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConverters._
+import com.wordnik.swagger.core.util.AnnotationUtil
+import scala.Predef.any2stringadd
 
 object ApiListingResource {
   var _cache: Option[Map[String, Class[_]]] = None
@@ -30,7 +32,8 @@ object ApiListingResource {
         val resources = app.getClasses().asScala ++ app.getSingletons().asScala.map(ref => ref.getClass)
         val cache = new HashMap[String, Class[_]]
         resources.foreach(resource => {
-          resource.getAnnotation(classOf[Api]) match {
+          val clazz = AnnotationUtil.findAnnotationDeclaringClass(classOf[Api], resource).asScala
+          clazz.getAnnotation(classOf[Api]) match {
             case ep: Annotation => {
               val path = ep.value.startsWith("/") match {
                 case true => ep.value.substring(1)
