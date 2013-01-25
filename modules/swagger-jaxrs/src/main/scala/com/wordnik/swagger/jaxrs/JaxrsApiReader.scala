@@ -83,7 +83,7 @@ class JaxrsApiSpecParser(val _hostClass: Class[_], _apiVersion: String, _swagger
   LOGGER.debug(hostClass + ", apiVersion: " + apiVersion + ", swaggerVersion: " + swaggerVersion + ", basePath: " + basePath + ", resourcePath: " + resourcePath)
 
   val documentation = new Documentation
-  val apiEndpoint = hostClass.getAnnotation(classOf[Api])
+  val apiEndpoint = AnnotationUtil.findAnnotationDeclaringClass(classOf[Api], hostClass).getAnnotation(classOf[Api])
 
   override def processParamAnnotations(docParam: DocumentationParameter, paramAnnotations: Array[Annotation], method: Method): Boolean = {
     var ignoreParam = false

@@ -39,11 +39,6 @@ object ApiMethodType {
   val HEAD = "HEAD"
 }
 
-trait GenericParserTrait {
-  def parseMethod(method: Method, endPoint: DocumentationEndPoint )
-
-}
-
 trait ApiSpecParserTrait extends BaseApiParser {
   private val LOGGER = LoggerFactory.getLogger(classOf[ApiSpecParserTrait])
 
@@ -56,7 +51,6 @@ trait ApiSpecParserTrait extends BaseApiParser {
   def resourcePath: String
   def getPath(method: Method): String
   def processParamAnnotations(docParam: DocumentationParameter, paramAnnotations: Array[Annotation], method: Method): Boolean
-  def additionalParsers: List[GenericParserTrait]
 
   val TRAIT = "trait"
 
@@ -92,6 +86,11 @@ trait ApiSpecParserTrait extends BaseApiParser {
 
   private val ListRegex: scala.util.matching.Regex = """List\[(.*?)\]""".r
   def parseMethod(method: Method): Any = {
+    val annotatedMethods = MethodMatchingAnnotationUtil.findAnnotatedMethods(method, classOf[ApiOperation])
+    val annotatedMethod = annotatedMethods.size() > 0 match {
+      case true  => annotatedMethods.get(0)
+      case false => method
+    }
     val apiOperation = AnnotationUtil.findAnnotation(method, classOf[ApiOperation])
     val apiErrors = AnnotationUtil.findAnnotation(method, classOf[ApiErrors])
     val isDeprecated = AnnotationUtil.findAnnotation(method, classOf[Deprecated])
@@ -105,7 +104,7 @@ trait ApiSpecParserTrait extends BaseApiParser {
       if (isDeprecated != null) docOperation.deprecated = true
 
       if (apiOperation != null) {
-        docOperation.httpMethod = parseHttpMethod(method, apiOperation)
+        docOperation.httpMethod = parseHttpMethod(annotatedMethod, apiOperation)
         docOperation.summary = readString(apiOperation.value)
         docOperation.notes = readString(apiOperation.notes)
         docOperation.setTags(toObjectList(apiOperation.tags))
@@ -127,7 +126,7 @@ trait ApiSpecParserTrait extends BaseApiParser {
 
       // Read method annotations for implicit api params which are not declared as actual argments to the method
       // Essentially ApiParamImplicit annotations on method
-      val methodAnnotations = method.getAnnotations
+      val methodAnnotations = annotatedMethod.getAnnotations
       for (ma <- methodAnnotations) {
         ma match {
           case pSet: ApiParamsImplicit => {
@@ -169,9 +168,9 @@ trait ApiSpecParserTrait extends BaseApiParser {
       }
 
       // Read the params and add to Operation
-      val paramAnnotationDoubleArray = method.getParameterAnnotations
-      val paramTypes = method.getParameterTypes
-      val genericParamTypes = method.getGenericParameterTypes
+      val paramAnnotationDoubleArray = annotatedMethod.getParameterAnnotations
+      val paramTypes = annotatedMethod.getParameterTypes
+      val genericParamTypes = annotatedMethod.getGenericParameterTypes
       var counter = 0
       var ignoreParam = false
       paramAnnotationDoubleArray.foreach(paramAnnotations => {
@@ -190,7 +189,7 @@ trait ApiSpecParserTrait extends BaseApiParser {
           case e: Exception => LOGGER.error("Unable to determine datatype for param " + counter + " in method " + method, e)
         }
 
-        ignoreParam = processParamAnnotations(docParam, paramAnnotations, method)
+        ignoreParam = processParamAnnotations(docParam, paramAnnotations, annotatedMethod)
 
         if (paramAnnotations.length == 0) {
           ignoreParam = true
@@ -204,10 +203,10 @@ trait ApiSpecParserTrait extends BaseApiParser {
       })
 
       // Get Endpoint
-      val docEndpoint = getEndPoint(documentation, getPath(method))
+      val docEndpoint = getEndPoint(documentation, getPath(annotatedMethod))
 
       // Add Operation to Endpoint
-      docEndpoint.addOperation(processOperation(method, docOperation))
+      docEndpoint.addOperation(processOperation(annotatedMethod, docOperation))
       LOGGER.debug("added operation " + docOperation + " from method " + method.getName)
 
       // Read the Errors and add to Response
@@ -216,7 +215,7 @@ trait ApiSpecParserTrait extends BaseApiParser {
           val docError = new DocumentationError
           docError.code = apiError.code
           docError.reason = readString(apiError.reason)
-          docOperation.addErrorResponse(docError)
+          docOperation. addErrorResponse(docError)
         }
       }
     } else LOGGER.debug("skipping method " + method.getName)

@@ -15,7 +15,6 @@ import javax.servlet.ServletConfig
 import scala.collection.mutable.HashMap
 import scala.collection.JavaConverters._
 import com.wordnik.swagger.core.util.AnnotationUtil
-import scala.Predef.any2stringadd
 
 object ApiListingResource {
   var _cache: Option[Map[String, Class[_]]] = None
@@ -32,8 +31,8 @@ object ApiListingResource {
         val resources = app.getClasses().asScala ++ app.getSingletons().asScala.map(ref => ref.getClass)
         val cache = new HashMap[String, Class[_]]
         resources.foreach(resource => {
-          val clazz = AnnotationUtil.findAnnotationDeclaringClass(classOf[Api], resource).asScala
-          clazz.getAnnotation(classOf[Api]) match {
+          val clazz = Option(AnnotationUtil.findAnnotationDeclaringClass(classOf[Api], resource))
+          clazz.map( k=>k.getAnnotation(classOf[Api]) match {
             case ep: Annotation => {
               val path = ep.value.startsWith("/") match {
                 case true => ep.value.substring(1)
@@ -42,7 +41,7 @@ object ApiListingResource {
               cache += path -> resource
             }
             case _ => 
-          }
+          })
         })
         _cache = Some(cache.toMap)
         cache
@@ -120,13 +119,14 @@ class ApiListing {
 
     routes.contains(route) match {
       case true => {
-        val cls = routes(route)
-        cls.getAnnotation(classOf[Api]) match {
+        val resource = routes(route)
+        val clazz = AnnotationUtil.findAnnotationDeclaringClass(classOf[Api], resource)
+        clazz.getAnnotation(classOf[Api]) match {
           case currentApiEndPoint: Annotation => {
             val apiPath = currentApiEndPoint.value
             val apiListingPath = currentApiEndPoint.value
             val doc = new HelpApi(apiFilterClassName).filterDocs(
-              JaxrsApiReader.read(cls, apiVersion, swaggerVersion, basePath, apiPath),
+              JaxrsApiReader.read(resource, apiVersion, swaggerVersion, basePath, apiPath),
               headers,
               uriInfo,
               apiListingPath,
