@@ -23,8 +23,7 @@ object ApiListingResource {
     app: Application,
     sc: ServletConfig,
     headers: HttpHeaders,
-    uriInfo: UriInfo
-  ) = {
+    uriInfo: UriInfo) = {
     _cache match {
       case Some(cache) => cache
       case None => {
@@ -32,7 +31,7 @@ object ApiListingResource {
         val cache = new HashMap[String, Class[_]]
         resources.foreach(resource => {
           val clazz = Option(AnnotationUtil.findAnnotationDeclaringClass(classOf[Api], resource))
-          clazz.map( k=>k.getAnnotation(classOf[Api]) match {
+          clazz.map(k => k.getAnnotation(classOf[Api]) match {
             case ep: Annotation => {
               val path = ep.value.startsWith("/") match {
                 case true => ep.value.substring(1)
@@ -40,7 +39,7 @@ object ApiListingResource {
               }
               cache += path -> resource
             }
-            case _ => 
+            case _ =>
           })
         })
         _cache = Some(cache.toMap)
@@ -56,8 +55,8 @@ class ApiListing {
     @Context app: Application,
     @Context sc: ServletConfig,
     @Context headers: HttpHeaders,
-    @Context uriInfo: UriInfo
-  ): Response = {
+    @Context uriInfo: UriInfo): Response = {
+
     val listingRoot = this.getClass.getAnnotation(classOf[Api]).value
 
     val reader = ConfigReaderFactory.getConfigReader(sc)
@@ -67,9 +66,9 @@ class ApiListing {
     val basePath = reader.basePath()
     val routes = ApiListingResource.routes(app, sc, headers, uriInfo)
 
-    val apis = (for(route <- routes.map(m => m._1)) yield {
+    val apis = (for (route <- routes.map(m => m._1)) yield {
       docForRoute(route, app, sc, headers, uriInfo) match {
-        case Some(doc) if(doc.getApis !=null && doc.getApis.size > 0) => {
+        case Some(doc) if (doc.getApis != null && doc.getApis.size > 0) => {
           Some(new DocumentationEndPoint(listingRoot + JaxrsApiReader.FORMAT_STRING + doc.resourcePath, ""))
         }
         case _ => None
@@ -85,9 +84,43 @@ class ApiListing {
     Response.ok.entity(doc).build
   }
 
+  def resourceListing2(
+    app: Application,
+    sc: ServletConfig,
+    headers: HttpHeaders,
+    uriInfo: UriInfo): Documentation = {
+
+    val listingRoot = this.getClass.getAnnotation(classOf[Api]).value
+
+    val reader = ConfigReaderFactory.getConfigReader(sc)
+    val apiFilterClassName = reader.apiFilterClassName()
+    val apiVersion = reader.apiVersion()
+    val swaggerVersion = reader.swaggerVersion()
+    val basePath = reader.basePath()
+    val routes = ApiListingResource.routes(app, sc, headers, uriInfo)
+
+    val apis = (for (route <- routes.map(m => m._1)) yield {
+      docForRoute(route, app, sc, headers, uriInfo) match {
+        case Some(doc) if (doc.getApis != null && doc.getApis.size > 0) => {
+          Some(new DocumentationEndPoint(listingRoot + JaxrsApiReader.FORMAT_STRING + doc.resourcePath, ""))
+        }
+        case _ => None
+      }
+    }).flatten.toList
+
+    val doc = new Documentation()
+    doc.apiVersion = apiVersion
+    doc.swaggerVersion = swaggerVersion
+    doc.basePath = basePath
+    doc.setApis(apis.asJava)
+    println(apis);
+    
+    doc
+  }
+
   /**
    * individual api listing
-   **/
+   */
   @GET
   @Path("/{route: .+}")
   def apiListing(
@@ -95,8 +128,7 @@ class ApiListing {
     @Context app: Application,
     @Context sc: ServletConfig,
     @Context headers: HttpHeaders,
-    @Context uriInfo: UriInfo
-  ): Response = {
+    @Context uriInfo: UriInfo): Response = {
     docForRoute(route, app, sc, headers, uriInfo) match {
       case Some(doc) => Response.ok.entity(doc).build
       case None => Response.status(Status.NOT_FOUND).build
@@ -108,8 +140,7 @@ class ApiListing {
     app: Application,
     sc: ServletConfig,
     headers: HttpHeaders,
-    uriInfo: UriInfo
-  ): Option[Documentation] = {
+    uriInfo: UriInfo): Option[Documentation] = {
     val reader = ConfigReaderFactory.getConfigReader(sc)
     val apiFilterClassName = reader.apiFilterClassName()
     val apiVersion = reader.apiVersion()
