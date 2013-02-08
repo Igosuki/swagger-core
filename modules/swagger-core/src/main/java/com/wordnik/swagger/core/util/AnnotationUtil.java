@@ -134,12 +134,7 @@ public class AnnotationUtil {
         T ann = ae.getAnnotation(annotationType);
         if (ann == null) {
             for (Annotation metaAnn : ae.getAnnotations()) {
-                if (annotationType.getClassLoader() != metaAnn.annotationType().getClassLoader()
-                        && metaAnn.annotationType().getName().equals(annotationType.getName())) {
-                    ann = (T) metaAnn;
-                } else {
-                    ann = metaAnn.annotationType().getAnnotation(annotationType);
-                }
+                ann = metaAnn.annotationType().getAnnotation(annotationType);
                 if (ann != null) {
                     break;
                 }

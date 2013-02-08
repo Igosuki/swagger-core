@@ -94,6 +94,7 @@ trait ApiSpecParserTrait extends BaseApiParser {
     val apiOperation = AnnotationUtil.findAnnotation(method, classOf[ApiOperation])
     val apiErrors = AnnotationUtil.findAnnotation(method, classOf[ApiErrors])
     val isDeprecated = AnnotationUtil.findAnnotation(method, classOf[Deprecated])
+    val apiVersion = AnnotationUtil.findAnnotation(method, classOf[ApiVersion])
 
     LOGGER.debug("parsing method " + method.getName)
     if (apiOperation != null && method.getName != "getHelp") {
@@ -108,6 +109,13 @@ trait ApiSpecParserTrait extends BaseApiParser {
         docOperation.summary = readString(apiOperation.value)
         docOperation.notes = readString(apiOperation.notes)
         docOperation.setTags(toObjectList(apiOperation.tags))
+        if(apiVersion != null) {
+          docOperation.setVersion(new DocumentationOperationVersion (
+            since = readString(apiVersion.since),
+            deprecatedSince = readString(apiVersion.deprecatedSince),
+            replacedBy = readString(apiVersion.replacedBy)
+          ))
+        }
         docOperation.nickname = method.getName
         val (apiResponseValue: String, isResponseMultiValue: Boolean) = ((responseClass: String, isMulti: Boolean) => responseClass match {
           case ListRegex(respClass) => (respClass, true)

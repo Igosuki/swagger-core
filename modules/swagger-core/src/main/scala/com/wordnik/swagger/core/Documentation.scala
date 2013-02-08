@@ -133,6 +133,16 @@ class DocumentationEndPoint(@BeanProperty var path: String, @BeanProperty var de
 }
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@XmlRootElement(name = "version")
+class DocumentationOperationVersion(
+  @BeanProperty var since: String,
+  @BeanProperty var deprecatedSince: String,
+  @BeanProperty var replacedBy: String)
+{
+   def this() = this(null, null, null)
+}
+
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement(name = "operation")
 class DocumentationOperation(
   @BeanProperty var httpMethod: String,
@@ -141,6 +151,7 @@ class DocumentationOperation(
   @BeanProperty var deprecated: java.lang.Boolean = null
   @BeanProperty var responseClass: String = _
   @BeanProperty var nickname: String = _
+  @BeanProperty var version: DocumentationOperationVersion = null
 
   def this() = this(null, null, null)
 
